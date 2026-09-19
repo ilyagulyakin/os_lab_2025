@@ -1,0 +1,9 @@
+*.o
+*.a
+*.so
+*.out
+lab2/src/swap/swap
+lab2/src/revert_string/app_static
+lab2/src/revert_string/app_dynamic
+lab2/src/revert_string/revert_string
+lab2/src/**/*.exe
