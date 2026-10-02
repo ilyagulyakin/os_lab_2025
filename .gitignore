@@ -7,3 +7,6 @@ lab2/src/revert_string/app_static
 lab2/src/revert_string/app_dynamic
 lab2/src/revert_string/revert_string
 lab2/src/**/*.exe
+lab3/src/sequential_min_max
+lab3/src/parallel_min_max
+lab3/src/exec_sequential_min_max
