@@ -1,12 +1,23 @@
+# --- Общие правила для объектников и библиотек ---
 *.o
 *.a
 *.so
 *.out
+
+# --- Лабораторная №2 ---
 lab2/src/swap/swap
 lab2/src/revert_string/app_static
 lab2/src/revert_string/app_dynamic
 lab2/src/revert_string/revert_string
 lab2/src/**/*.exe
+
+# --- Лабораторная №3 ---
 lab3/src/sequential_min_max
 lab3/src/parallel_min_max
 lab3/src/exec_sequential_min_max
+
+# --- Лабораторная №4 ---
+lab4/src/parallel_sum
+lab4/src/parallel_sum_threads
+lab4/src/process_memory
+lab4/src/zombie_demo

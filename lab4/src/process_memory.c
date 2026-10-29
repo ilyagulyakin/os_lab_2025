@@ -1,53 +1,54 @@
-
-/* Program to display address information about the process */
-/* Adapted from Gray, J., program 1.4 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <inttypes.h>     /* для PRIXPTR */
 #include <sys/types.h>
 #include <unistd.h>
 
-/* Below is a macro definition */
-#define SHW_ADR(ID, I) (printf("ID %s \t is at virtual address: %8X\n", ID, &I))
+/* Универсальный макрос: печатает адрес объекта как uintptr_t */
+#define SHW_ADR(ID, I) \
+    (printf("ID %-8s \t is at virtual address: 0x%016" PRIXPTR "\n", \
+            ID, (uintptr_t)&(I)))
 
-extern int etext, edata, end; /* Global variables for process
-                                 memory */
+extern int etext, edata, end;   /* маркеры границ сегментов (от линкера) */
 
-char *cptr = "This message is output by the function showit()\n"; /* Static */
+char *cptr = "This message is output by the function showit()\n";
 char buffer1[25];
-int showit(); /* Function prototype */
 
-main() {
-  int i = 0; /* Automatic variable */
+int showit(char *p);            /* прототип с явным типом аргумента */
 
-  /* Printing addressing information */
-  printf("\nAddress etext: %8X \n", &etext);
-  printf("Address edata: %8X \n", &edata);
-  printf("Address end  : %8X \n", &end);
+int main(void) {
+    int i = 0;
 
-  SHW_ADR("main", main);
-  SHW_ADR("showit", showit);
-  SHW_ADR("cptr", cptr);
-  SHW_ADR("buffer1", buffer1);
-  SHW_ADR("i", i);
-  strcpy(buffer1, "A demonstration\n");   /* Library function */
-  write(1, buffer1, strlen(buffer1) + 1); /* System call */
-  showit(cptr);
+    printf("\nAddress etext: 0x%016" PRIXPTR "\n", (uintptr_t)&etext);
+    printf("Address edata: 0x%016" PRIXPTR "\n", (uintptr_t)&edata);
+    printf("Address end  : 0x%016" PRIXPTR "\n", (uintptr_t)&end);
 
-} /* end of main function */
+    SHW_ADR("main",    main);
+    SHW_ADR("showit",  showit);
+    SHW_ADR("cptr",    cptr);
+    SHW_ADR("buffer1", buffer1);
+    SHW_ADR("i",       i);
 
-/* A function follows */
-int showit(p) char *p;
-{
-  char *buffer2;
-  SHW_ADR("buffer2", buffer2);
-  if ((buffer2 = (char *)malloc((unsigned)(strlen(p) + 1))) != NULL) {
-    printf("Alocated memory at %X\n", buffer2);
-    strcpy(buffer2, p);    /* copy the string */
-    printf("%s", buffer2); /* Didplay the string */
-    free(buffer2);         /* Release location */
-  } else {
-    printf("Allocation error\n");
-    exit(1);
-  }
+    strcpy(buffer1, "A demonstration\n");
+    write(1, buffer1, strlen(buffer1) + 1);   /* системный вызов */
+    showit(cptr);
+
+    return 0;
+}
+
+int showit(char *p) {
+    char *buffer2;
+    SHW_ADR("buffer2", buffer2);
+    if ((buffer2 = (char *)malloc((unsigned)(strlen(p) + 1))) != NULL) {
+        printf("Allocated memory at 0x%016" PRIXPTR "\n", (uintptr_t)buffer2);
+        strcpy(buffer2, p);
+        printf("%s", buffer2);
+        free(buffer2);
+    } else {
+        printf("Allocation error\n");
+        exit(1);
+    }
+    return 0;
 }
