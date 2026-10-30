@@ -1,5 +1,8 @@
+#include <inttypes.h>
 #include <limits.h>
+#include <pthread.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,8 +14,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include "pthread.h"
-
 struct FactorialArgs {
   uint64_t begin;
   uint64_t end;
@@ -20,6 +21,10 @@ struct FactorialArgs {
 };
 
 uint64_t MultModulo(uint64_t a, uint64_t b, uint64_t mod) {
+  if (mod == 0) {
+    return 0;
+  }
+
   uint64_t result = 0;
   a = a % mod;
   while (b > 0) {
@@ -33,16 +38,62 @@ uint64_t MultModulo(uint64_t a, uint64_t b, uint64_t mod) {
 }
 
 uint64_t Factorial(const struct FactorialArgs *args) {
-  uint64_t ans = 1;
+  if (args->mod == 0) {
+    return 0;
+  }
 
-  // TODO: your code here
+  uint64_t ans = 1 % args->mod;
+
+  if (args->begin > args->end) {
+    return ans;
+  }
+
+  for (uint64_t i = args->begin;; ++i) {
+    ans = MultModulo(ans, i, args->mod);
+    if (i == args->end) {
+      break;
+    }
+  }
 
   return ans;
 }
 
 void *ThreadFactorial(void *args) {
   struct FactorialArgs *fargs = (struct FactorialArgs *)args;
-  return (void *)(uint64_t *)Factorial(fargs);
+  return (void *)(uintptr_t)Factorial(fargs);
+}
+
+static int recv_all(int fd, void *buf, size_t len) {
+  char *p = (char *)buf;
+  size_t off = 0;
+
+  while (off < len) {
+    ssize_t n = recv(fd, p + off, len - off, 0);
+    if (n == 0) {
+      return 0;
+    }
+    if (n < 0) {
+      return -1;
+    }
+    off += (size_t)n;
+  }
+
+  return 1;
+}
+
+static int send_all(int fd, const void *buf, size_t len) {
+  const char *p = (const char *)buf;
+  size_t off = 0;
+
+  while (off < len) {
+    ssize_t n = send(fd, p + off, len - off, 0);
+    if (n <= 0) {
+      return -1;
+    }
+    off += (size_t)n;
+  }
+
+  return 0;
 }
 
 int main(int argc, char **argv) {
@@ -50,8 +101,6 @@ int main(int argc, char **argv) {
   int port = -1;
 
   while (true) {
-    int current_optind = optind ? optind : 1;
-
     static struct option options[] = {{"port", required_argument, 0, 0},
                                       {"tnum", required_argument, 0, 0},
                                       {0, 0, 0, 0}};
@@ -67,12 +116,20 @@ int main(int argc, char **argv) {
       switch (option_index) {
       case 0:
         port = atoi(optarg);
-        // TODO: your code here
+        if (port <= 0 || port > 65535) {
+          fprintf(stderr, "Invalid port\n");
+          return 1;
+        }
         break;
+
       case 1:
         tnum = atoi(optarg);
-        // TODO: your code here
+        if (tnum <= 0) {
+          fprintf(stderr, "Invalid tnum\n");
+          return 1;
+        }
         break;
+
       default:
         printf("Index %d is out of options\n", option_index);
       }
@@ -81,6 +138,7 @@ int main(int argc, char **argv) {
     case '?':
       printf("Unknown argument\n");
       break;
+
     default:
       fprintf(stderr, "getopt returned character code 0%o?\n", c);
     }
@@ -93,7 +151,7 @@ int main(int argc, char **argv) {
 
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (server_fd < 0) {
-    fprintf(stderr, "Can not create server socket!");
+    fprintf(stderr, "Can not create server socket!\n");
     return 1;
   }
 
@@ -107,7 +165,7 @@ int main(int argc, char **argv) {
 
   int err = bind(server_fd, (struct sockaddr *)&server, sizeof(server));
   if (err < 0) {
-    fprintf(stderr, "Can not bind to socket!");
+    fprintf(stderr, "Can not bind to socket!\n");
     return 1;
   }
 
@@ -130,37 +188,55 @@ int main(int argc, char **argv) {
     }
 
     while (true) {
-      unsigned int buffer_size = sizeof(uint64_t) * 3;
-      char from_client[buffer_size];
-      int read = recv(client_fd, from_client, buffer_size, 0);
+      char from_client[sizeof(uint64_t) * 3];
 
-      if (!read)
+      int read_result = recv_all(client_fd, from_client, sizeof(from_client));
+
+      if (read_result == 0) {
         break;
-      if (read < 0) {
+      }
+      if (read_result < 0) {
         fprintf(stderr, "Client read failed\n");
         break;
       }
-      if (read < buffer_size) {
-        fprintf(stderr, "Client send wrong data format\n");
-        break;
-      }
-
-      pthread_t threads[tnum];
 
       uint64_t begin = 0;
       uint64_t end = 0;
       uint64_t mod = 0;
+
       memcpy(&begin, from_client, sizeof(uint64_t));
       memcpy(&end, from_client + sizeof(uint64_t), sizeof(uint64_t));
       memcpy(&mod, from_client + 2 * sizeof(uint64_t), sizeof(uint64_t));
 
-      fprintf(stdout, "Receive: %llu %llu %llu\n", begin, end, mod);
+      fprintf(stdout, "Receive: %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
+              begin, end, mod);
 
+      if (mod == 0) {
+        uint64_t zero = 0;
+        send_all(client_fd, &zero, sizeof(zero));
+        continue;
+      }
+
+      pthread_t threads[tnum];
       struct FactorialArgs args[tnum];
-      for (uint32_t i = 0; i < tnum; i++) {
-        // TODO: parallel somehow
-        args[i].begin = 1;
-        args[i].end = 1;
+
+      uint64_t total_elems = (end >= begin) ? (end - begin + 1) : 0;
+      uint64_t chunk = total_elems / (uint64_t)tnum;
+      uint64_t rem = total_elems % (uint64_t)tnum;
+      uint64_t cur = begin;
+
+      for (uint32_t i = 0; i < (uint32_t)tnum; i++) {
+        uint64_t len = chunk + ((uint64_t)i < rem ? 1 : 0);
+
+        if (len == 0) {
+          args[i].begin = 1;
+          args[i].end = 0;
+        } else {
+          args[i].begin = cur;
+          args[i].end = cur + len - 1;
+          cur += len;
+        }
+
         args[i].mod = mod;
 
         if (pthread_create(&threads[i], NULL, ThreadFactorial,
@@ -170,19 +246,19 @@ int main(int argc, char **argv) {
         }
       }
 
-      uint64_t total = 1;
-      for (uint32_t i = 0; i < tnum; i++) {
-        uint64_t result = 0;
-        pthread_join(threads[i], (void **)&result);
+      uint64_t total = 1 % mod;
+
+      for (uint32_t i = 0; i < (uint32_t)tnum; i++) {
+        void *thread_result = NULL;
+        pthread_join(threads[i], &thread_result);
+
+        uint64_t result = (uint64_t)(uintptr_t)thread_result;
         total = MultModulo(total, result, mod);
       }
 
-      printf("Total: %llu\n", total);
+      printf("Total: %" PRIu64 "\n", total);
 
-      char buffer[sizeof(total)];
-      memcpy(buffer, &total, sizeof(total));
-      err = send(client_fd, buffer, sizeof(total), 0);
-      if (err < 0) {
+      if (send_all(client_fd, &total, sizeof(total)) < 0) {
         fprintf(stderr, "Can't send data to client\n");
         break;
       }
