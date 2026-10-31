@@ -27,7 +27,7 @@ static void on_alarm(int sig) {
 int main(int argc, char **argv) {
     int timeout = 0;   /* 0 = таймаут не задан */
 
-    /* 1. Разбор --timeout */
+    /* 1. Разбор аргументов */
     static struct option long_opts[] = {
         {"timeout", required_argument, NULL, 't'},
         {NULL, 0, NULL, 0}
