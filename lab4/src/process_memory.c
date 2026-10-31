@@ -16,7 +16,7 @@ extern int etext, edata, end;   /* маркеры границ сегменто�
 char *cptr = "This message is output by the function showit()\n"; /*Литерал лежит в .rodata, а сам указатель cptr в data, потому что инициализирован.*/
 char buffer1[25]; /*неинициализированный попадает в BSS*/
 
-int showit(char *p);            /* прототип с явным типом аргумента */
+int showit(char *p); /* прототип с явным типом аргумента */
 
 int main(void) {
     int i = 0; /* стек: локальная переменная main */
