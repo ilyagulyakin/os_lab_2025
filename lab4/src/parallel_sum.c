@@ -19,13 +19,13 @@ static void on_alarm(int sig) {
     (void)sig;
     for (int i = 0; i < num_children; i++) {
         if (child_pids[i] > 0) {
-            kill(child_pids[i], SIGKILL);   /* требование 1 */
+            kill(child_pids[i], SIGKILL);
         }
     }
 }
 
 int main(int argc, char **argv) {
-    int timeout = 0;   /* 0 = таймаут не задан */
+    int timeout = 0;
 
     /* 1. Разбор аргументов */
     static struct option long_opts[] = {
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     for (uint32_t i = 0; i < array_size; i++)
         array[i] = rand() % 100;
 
-    /* 2. Установка таймаута (только если задан) */
+    /* 2. Установка таймаута*/
     if (timeout > 0) {
         if (signal(SIGALRM, on_alarm) == SIG_ERR) {   
             perror("signal");
@@ -75,7 +75,6 @@ int main(int argc, char **argv) {
             int end   = (int)((i + 1) * array_size / threads_num);
             int sum = 0;
             for (int j = begin; j < end; j++) sum += array[j];
-            /* для демонстрации возвращаем младший байт */
             exit(sum & 0xFF);
         } else if (pid > 0) {
             child_pids[i] = pid;
