@@ -11,16 +11,7 @@ uint64_t MultModulo(uint64_t a, uint64_t b, uint64_t mod) {
     return 0;
   }
 
-  uint64_t result = 0;
-  a = a % mod;
-  while (b > 0) {
-    if (b % 2 == 1)
-      result = (result + a) % mod;
-    a = (a * 2) % mod;
-    b /= 2;
-  }
-
-  return result % mod;
+  return (uint64_t)((unsigned __int128)(a % mod) * (b % mod) % mod);
 }
 
 uint64_t Factorial(const struct FactorialArgs *args) {
@@ -61,6 +52,30 @@ bool ConvertStringToUI64(const char *str, uint64_t *val) {
 
   *val = (uint64_t)i;
   return true;
+}
+
+struct FactorialArgs SplitRange(uint64_t begin, uint64_t end, uint64_t parts,
+                                size_t index) {
+  struct FactorialArgs part = {1, 0, 0};
+
+  if (parts == 0 || end < begin) {
+    return part;
+  }
+
+  uint64_t total = end - begin + 1;
+  uint64_t chunk = total / parts;
+  uint64_t rem = total % parts;
+  uint64_t idx = (uint64_t)index;
+
+  uint64_t extra_before = idx < rem ? idx : rem;
+  uint64_t len = chunk + (idx < rem ? 1 : 0);
+
+  if (len != 0) {
+    part.begin = begin + idx * chunk + extra_before;
+    part.end = part.begin + len - 1;
+  }
+
+  return part;
 }
 
 int send_all(int fd, const void *buf, size_t len) {
