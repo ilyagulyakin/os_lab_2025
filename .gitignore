@@ -3,21 +3,43 @@
 *.a
 *.so
 *.out
+#Лабораторная №0
+lab0/src/hello/hello_world
 
-# --- Лабораторная №2 ---
+#Лабораторная №1
+lab1/src/Path
+lab1/src/text.txt
+
+#Лабораторная №2
 lab2/src/swap/swap
 lab2/src/revert_string/app_static
 lab2/src/revert_string/app_dynamic
 lab2/src/revert_string/revert_string
 lab2/src/**/*.exe
 
-# --- Лабораторная №3 ---
+#Лабораторная №3
 lab3/src/sequential_min_max
 lab3/src/parallel_min_max
 lab3/src/exec_sequential_min_max
 
-# --- Лабораторная №4 ---
+#Лабораторная №4
 lab4/src/parallel_sum
 lab4/src/parallel_sum_threads
 lab4/src/process_memory
 lab4/src/zombie_demo
+
+#Лабораторная №5
+lab5/src/deadlock
+lab5/src/factorial
+lab5/src/mutex_nolock
+lab5/src/mutex_lock
+
+#Лабораторная №6
+lab6/src/server
+lab6/src/client
+
+#Лабораторная №7
+lab7/src/tcpclient
+lab7/src/tcpserver
+lab7/src/udpclient
+lab7/src/udpserver
